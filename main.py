@@ -1,3 +1,33 @@
+import os
+import pandas as pd
+import numpy as np
+import time
+import random
+import sys
+import torch
+from torch.utils.data import DataLoader,TensorDataset,random_split
+from torchdata.datapipes.map import MapDataPipe
+from pytorch_lightning import LightningDataModule, LightningModule
+from transformers.trainer_pt_utils import LabelSmoother
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, PreTrainedTokenizer
+import heapq
+import pickle
+import gzip
+import editdistance
+import backoff
+import openai
+import re
+import torch.nn.functional as F 
+import yaml
+import json
+from tarski.io import PDDLReader
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, PeftModel
+from pytorch_lightning.loggers import TensorBoardLogger
+import pytorch_lightning as pl
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+from contextlib import redirect_stdout, redirect_stderr
+
 def seed_everything(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -1316,8 +1346,8 @@ def game24_planning(
     
     data = Game24DataModule(
         tokenizer=tokenizer,
-        train_data_path="/kaggle/input/train-dataset/train.json",
-        batch_size=2, ## As per code.
+        train_data_path="train.json",
+        batch_size=4, ## As per code.
         device="cuda",
         limit_prompts=None,
         do_sft=False, #
@@ -1336,7 +1366,7 @@ def game24_planning(
         val_data=train_data,
         lr=1e-5,
         logZ_lr=1e-5,
-        batch_size=2,
+        batch_size=4,
         use_4bit = False,
         do_sft = False,
         test_sample_nums = 20
@@ -1367,7 +1397,6 @@ def game24_planning(
             ckpt_path=load_checkpoint_path
         )
         
-from contextlib import redirect_stdout, redirect_stderr
 
 with open('training_log.txt', 'a') as f:
     with redirect_stdout(f), redirect_stderr(f):
