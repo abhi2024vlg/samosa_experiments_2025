@@ -586,12 +586,12 @@ class Game24DataModule(LightningDataModule):
             train_data = TensorDataset(all_inputs_ids, all_labels, all_attention_masks, all_rewards)
             self.train_data = PromptDataPipe(train_data)
             
-            tests_all = list(pd.read_csv('/kaggle/input/datasetpuzzle/24.csv')['Puzzles'])
+            tests_all = list(pd.read_csv('24.csv')['Puzzles'])
             vald = tests_all[10:20] + tests_all[-20:-10]
             self.val_data = PromptDataPipe(vald)
             
         elif stage == 'test':
-            tests_all = list(pd.read_csv('/kaggle/input/datasetpuzzle/24.csv')['Puzzles'])
+            tests_all = list(pd.read_csv('24.csv')['Puzzles'])
             self.test_data = PromptDataPipe(tests_all[1000:1010])
 
     def creat_labels(self, inputs, generate_text, ignore_token_id):
@@ -1324,7 +1324,7 @@ def game24_planning(
         max_length=1024
     )
      
-    train_data = list(pd.read_csv('/kaggle/input/datasetpuzzle/24.csv')['Puzzles'])
+    train_data = list(pd.read_csv('24.csv')['Puzzles'])
     logZ = torch.nn.Parameter(torch.tensor([0], dtype=torch.float))
     
     
