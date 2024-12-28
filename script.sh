@@ -32,6 +32,10 @@ else
     exit 1
 fi
 
+echo "Setting Hugging Face credentials..."
+source token.env
+huggingface-cli login --token $HF_TOKEN
+
 pip install antlr4-python3-runtime==4.7.1
 
 python3 main.py
