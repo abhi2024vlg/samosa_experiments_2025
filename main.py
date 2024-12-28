@@ -41,7 +41,6 @@ seed = 12
 
 seed_everything(seed)
 
-huggingface-cli login --token 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
 
 def load_model(
     pretrained_model,
@@ -1378,7 +1377,7 @@ def game24_planning(
     trainer = pl.Trainer(
         accelerator="gpu",
         devices=1,
-        strategy="ddp_notebook",
+        strategy="auto",
         precision=16,
         max_epochs=epoch_nums,
         num_sanity_val_steps=0,
