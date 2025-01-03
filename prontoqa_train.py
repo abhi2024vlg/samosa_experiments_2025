@@ -29,12 +29,11 @@ seed = 42
 
 seed_everything(seed)
 
-!huggingface-cli login --token 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
-
 def load_model(
     pretrained_model,
     device,
     use_lora=False,
+    use_4bit = False,
     test_only=False,
     load_checkpoint_path=None
 ):
@@ -48,13 +47,33 @@ def load_model(
         test_only: Whether this is for testing only
         load_checkpoint_path: Path to load checkpoint from (for testing)
     """
-    model = AutoModelForCausalLM.from_pretrained(
+
+    if use_4bit:
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.bfloat16,
+            llm_int8_has_fp16_weight=False,
+            bnb_4bit_quant_type="nf4",
+            llm_int8_threshold=6.0,
+            bnb_4bit_use_double_quant=True,
+        )
+        model = AutoModelForCausalLM.from_pretrained(args.pretrained_model,
+                                                trust_remote_code=True,
+                                                device_map="auto",
+                                                torch_dtype=torch.bfloat16,
+                                                quantization_config=bnb_config)
+        model = prepare_model_for_kbit_training(model)
+        model.config.use_cache = False
+
+    else :
+        model = AutoModelForCausalLM.from_pretrained(
         pretrained_model,
         torch_dtype=torch.bfloat16,
         trust_remote_code=True,
         device_map="cuda:0"
-    )
-    model.to(device)
+        )
+        
+        model.to(device)
     
     tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model, 
@@ -80,12 +99,14 @@ def load_model(
         tokenizer.pad_token = tokenizer.eos_token
     
     return model, tokenizer
+    
 
 # Using LoRA for training
 model, tokenizer = load_model(
     pretrained_model="meta-llama/Llama-3.2-1B",
     device=device,
     use_lora=True,
+    use_4bit=True,
     test_only=False,
     load_checkpoint_path=None
 )
@@ -582,6 +603,7 @@ class BlocksWorldGFNTask(LightningModule):
         self.epsilon_end = 0.01
         self.ll_weight=0.9
         self.step = 2
+        self.use_4bit = True
         
         # Define learning rate schedule
         self.get_lr_at_step = lambda step: min(step / 20 * self.lr, self.lr)
@@ -1131,9 +1153,22 @@ class BlocksWorldGFNTask(LightningModule):
         self.log("scheduled/R_temperature", self.reward_temperature, sync_dist=True)
 
     def configure_optimizers(self):
-        return torch.optim.AdamW([{'params': self.model.parameters(), 'lr': self.lr},
+        if self.use_4bit:
+            import bitsandbytes as bnb  # fmt: skip
+            optimizer = bnb.optim.PagedAdamW8bit([{'params': self.model.parameters(), 'lr': self.lr},
                                     {'params': [self.logZ,], 'lr': self.logZ_lr}])
-
+            return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": CosineAnnealingLR(optimizer, T_max=10, eta_min=5e-5),
+                "monitor": "metric_to_track",
+                "frequency": 10,
+            }
+            }
+        else:
+            return torch.optim.AdamW([{'params': self.model.parameters(), 'lr': self.lr},
+                                    {'params': [self.logZ,], 'lr': self.logZ_lr}])
+            
     def local_search(self,
                     query,
                     allowed_actions,
