@@ -1240,7 +1240,7 @@ class BlocksWorldGFNTask(LightningModule):
                 new_state = self.transitions[last_state][action]
             else:
                 # Generate next state using language model
-                with open("state_transit_examples_long.json", "r") as f:
+                with open("prontoqa_prompts/state_transit_examples_long.json", "r") as f:
                     dic = json.load(f)
                     world_update_prompt = dic["input"] + dic["facts_format"].format(last_state, action) + dic["next_claim_prefix"] + " "
 
@@ -1384,7 +1384,7 @@ class BlocksWorldGFNTask(LightningModule):
                 action = random.choice(allowed_actions)
             else:
                 # Load prompt templates for action selection
-                with open("next_step_1shot.json", "r") as f:
+                with open("prontoqa_prompts/next_step_1shot.json", "r") as f:
                     dic = json.load(f)
                     inputs = dic["input"] + dic["facts_format"].format(" ".join(allowed_actions)) + dic["target_format"].format(query) + dic["claim_format"].format(last_state) + dic["next_step_prefix"] + " "
                 
@@ -1441,7 +1441,7 @@ class BlocksWorldGFNTask(LightningModule):
                 new_state = self.transitions[last_state][action]
             else:
                 # Generate new state transition using language model
-                with open("state_transit_examples_long.json", "r") as f:
+                with open("prontoqa_prompts/state_transit_examples_long.json", "r") as f:
                     dic = json.load(f)
                     world_update_prompt = dic["input"] + dic["facts_format"].format(last_state, action) + dic["next_claim_prefix"] + " "
 
@@ -1647,7 +1647,7 @@ class BlocksWorldGFNTask(LightningModule):
         log_bf = []  # Backward log probabilities
 
         # Load prompt templates from configuration file
-        with open("next_step_1shot.json", "r") as f:
+        with open("prontoqa_prompts/next_step_1shot.json", "r") as f:
             dic = json.load(f)
             # Construct base input template with allowed actions
             inputs_template = dic["input"] + dic["facts_format"].format(" ".join(allowed_actions))
@@ -1728,9 +1728,9 @@ def blocksworld_planning(
     
     # Initialize data module with direct parameters
     data = PromptDataModule(
-        prompt_file="next_step_examples.json",  # custom prompt file
-        data_file="345hop_random_true.json",  # custom data file
-        cot_file="data.txt",  # custom chain of thought file
+        prompt_file="prontoqa_prompts/next_step_examples.json",  # custom prompt file
+        data_file="prontoqa_data/345hop_random_true.json",  # custom data file
+        cot_file="prontoqa_data/data.txt",  # custom chain of thought file
     )
     
     # Get data splits
