@@ -6,4 +6,5 @@
 - Activate conda env using `conda activate FoR`
 - Install some dependencies `pip install tensorboard`
 - Setup HF credentials using `huggingface-cli login --token <TOKEN>`
-- Run script using `nohup python3 main.py`
+- Run script using `nohup python3 main.py` or `nohup python3 prontoqa_train.py`
+- If facing rope scaling error `pip install -U transformers`

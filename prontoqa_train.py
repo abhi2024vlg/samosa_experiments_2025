@@ -1,10 +1,11 @@
 import random
 import numpy as np
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, PeftModel
 from torch.utils.data import DataLoader
 from pytorch_lightning import LightningModule
+from pytorch_lightning import LightningDataModule
 import json
 import os
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -13,6 +14,10 @@ from torch.distributions import Categorical
 import csv
 import pytorch_lightning as pl
 from contextlib import redirect_stdout, redirect_stderr
+import bitsandbytes as bnb  # fmt: skip
+import time
+from torch.optim.lr_scheduler import CosineAnnealingLR
+import heapq
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -57,7 +62,7 @@ def load_model(
             llm_int8_threshold=6.0,
             bnb_4bit_use_double_quant=True,
         )
-        model = AutoModelForCausalLM.from_pretrained(args.pretrained_model,
+        model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.2-1B",
                                                 trust_remote_code=True,
                                                 device_map="auto",
                                                 torch_dtype=torch.bfloat16,
@@ -1154,7 +1159,7 @@ class BlocksWorldGFNTask(LightningModule):
 
     def configure_optimizers(self):
         if self.use_4bit:
-            import bitsandbytes as bnb  # fmt: skip
+
             optimizer = bnb.optim.PagedAdamW8bit([{'params': self.model.parameters(), 'lr': self.lr},
                                     {'params': [self.logZ,], 'lr': self.logZ_lr}])
             return {
@@ -1249,7 +1254,6 @@ class BlocksWorldGFNTask(LightningModule):
                     except Exception as e:
                         print(e)
                         print("An error occurred: Query LM fails, line 721")
-                        import time
                         time.sleep(1)
 
                 print("new_state222:\n", last_state)
@@ -1454,7 +1458,6 @@ class BlocksWorldGFNTask(LightningModule):
                     except Exception as e:
                         print(e)
                         print("An error occurred: Query LM fails, line 721")
-                        import time
                         time.sleep(1)
 
                 print("new_state222:\n", last_state)
@@ -1623,8 +1626,11 @@ class BlocksWorldGFNTask(LightningModule):
         - Includes fallback matching for inexact action matches
         """
         # Enable LoRA adaptations if specified in arguments
-        if  use_lora:
-            base_to_lora(self.model)
+        # This is now being passed as it is without use_lora arg as it is giving some issue ============ fix me
+        # if  self.use_lora:
+        #     base_to_lora(self.model)
+        
+        base_to_lora(self.model)
 
         # Preprocess allowed actions by splitting on periods and reformatting
         allowed_actions = allowed_actions.split(". ")
@@ -1661,8 +1667,14 @@ class BlocksWorldGFNTask(LightningModule):
             action_ids = [self.tokenizer.encode(a, add_special_tokens=False, return_tensors='pt').to("cuda:0") for a in action_texts]
 
             # Pad action sequences to same length for batch processing
+            # print("Action ids",action_ids)
+            # print("Length of action ids", len(action_ids))
             max_length = max(len(aid[0]) for aid in action_ids)
-            padded_action_ids = [torch.cat([aid, torch.full((1, max_length - len(aid[0])), self.tokenizer.pad_token_id, device=self.device)], dim=-1) for aid in action_ids]
+            # print("Max length", max_length)
+            padding_token_id = (self.tokenizer.pad_token_id 
+                       if self.tokenizer.pad_token_id is not None 
+                       else self.tokenizer.eos_token_id)
+            padded_action_ids = [torch.cat([aid, torch.full((1, max_length - len(aid[0])), padding_token_id, device=self.device)], dim=-1) for aid in action_ids]
             
             # Combine input with each possible action for batch processing
             batch_input_ids_with_actions = torch.cat([torch.cat([input_ids, pid], dim=-1) for pid in padded_action_ids], dim=0)
@@ -1753,7 +1765,7 @@ def blocksworld_planning(
     # Train the model
     trainer.fit(model=task, datamodule=data)
 
-from contextlib import redirect_stdout, redirect_stderr
+
 
 with open('training_log.txt', 'a') as f:
     with redirect_stdout(f), redirect_stderr(f):
