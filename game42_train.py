@@ -243,7 +243,7 @@ Answer: 2 * 21 * (10 - 9) = 42
 Input: 3 10 3 3
 Answer: (3 + 3) * (10 - 3) = 42
 Input: 0 4 8 21
-Answer: (8 / 4 + 0) * 8 = 42
+Answer: (8 / 4 + 0) * 21 = 42
 Input: 13 13 13 3
 Answer: 13 + 13 + 13 + 9 = 42
 Input: {input}
