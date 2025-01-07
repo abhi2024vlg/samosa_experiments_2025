@@ -1342,7 +1342,7 @@ def game24_planning(
     
     data = Game24DataModule(
         tokenizer=tokenizer,
-        train_data_path="game42_data/train.json",
+        train_data_path="game42_data/train_trimmed.json",
         batch_size=4, ## As per code.
         device="cuda",
         limit_prompts=None,
