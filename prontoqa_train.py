@@ -1776,11 +1776,3 @@ with open('training_log.txt', 'a') as f:
             epochs=40,         # Using default value as per code
         )
 
-with open('training_log.txt', 'a') as f:
-    with redirect_stdout(f), redirect_stderr(f):
-        blocksworld_planning(
-            model=model,
-            tokenizer=tokenizer,
-            buffer_size=50,  # Using default value as per code
-            epochs=40,         # Using default value as per code
-        )
