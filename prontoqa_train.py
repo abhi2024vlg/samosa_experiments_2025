@@ -245,9 +245,9 @@ class PromptDataModule(LightningDataModule):
         
         # Define keywords for data filtering
         # In-distribution keywords typically related to mathematical concepts
-        self.indis_keywords = ["3", "31", "131071", "real", "number", "imaginary", "numbers"]
+        self.ood_keywords = ["3", "31", "131071", "real", "number", "imaginary", "numbers"]
         # Out-of-distribution keywords typically related to biological concepts
-        self.ood_keywords = ["bony", "insect", "cold-blooded", "animal"]
+        self.indis_keywords = ["bony", "insect", "cold-blooded", "animal"]
 
     def setup(self, stage):
         """
@@ -1757,7 +1757,7 @@ def blocksworld_planning(
     trainer = pl.Trainer(
         accelerator="gpu",
         devices=1,
-        precision=16,
+        precision="bf16",
         max_epochs=epochs,
         accumulate_grad_batches=10,
         logger=logger
