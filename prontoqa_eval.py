@@ -551,7 +551,7 @@ class BlocksWorldGFNTask(LightningModule):
 
 
     @torch.no_grad()
-    def test_step(self, problem, batch_idx):
+    def validation_step(self, problem, batch_idx):
         # Prepare model for evaluation
         base_to_lora(self.model)   
         self.model.eval()           
@@ -842,13 +842,13 @@ def blocksworld_planning(
         logger=logger
     )
     # Train the model
-    trainer.test(model=task, datamodule=data)
+    trainer.validate(model=task, datamodule=data)
 
 
 
 
 
-with open('training_log.txt', 'a') as f:
+with open(f'temp={args.temp},{'finetuned'if args.finetuned else 'pretrained'}.txt', 'a') as f:
     with redirect_stdout(f), redirect_stderr(f):
         blocksworld_planning(
             model=model,
