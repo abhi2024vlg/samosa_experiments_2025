@@ -26,10 +26,14 @@ def options():
     parser = argparse.ArgumentParser()
     parser.add_argument( '--temp', type=float, default=0.3)
     # parser.add_argument( '--p', type=float, default=0.9)
-    parser.add_argument('--finetuned', type=bool, default=True)
+    parser.add_argument('--finetuned', action='store_true', help="Specify if the model is finetuned")
     return parser.parse_args()
 
 args = options()
+
+print("Temperature is", args.temp, "Finetuned or not", args.finetuned)
+
+nametext = 'finetuned' if args.finetuned else 'pretrained'
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -523,7 +527,7 @@ class BlocksWorldGFNTask(LightningModule):
         self.sum_avg="sum"
         self.batch_size = 1
         ## Storing 
-        self.test_csv = "test_success.csv"
+        self.test_csv = f"test_success, temp={args.temp}, {nametext}.csv"
         # Store model and parameters
         self.model = model
         if use_lora:
@@ -848,7 +852,7 @@ def blocksworld_planning(
 
 
 
-with open(f'temp={args.temp},{'finetuned'if args.finetuned else 'pretrained'}.txt', 'a') as f:
+with open(f'temp={args.temp},{nametext}.txt', 'a') as f:
     with redirect_stdout(f), redirect_stderr(f):
         blocksworld_planning(
             model=model,
